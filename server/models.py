@@ -8,7 +8,7 @@ metadata = MetaData(naming_convention={
 
 db = SQLAlchemy(metadata=metadata)
 
-class Users(db.Model):
+class User(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -17,86 +17,46 @@ class Users(db.Model):
     role = db.Column(db.String)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 
-    # Define a one-to-many relationship between Users and Lostitem
-    lost_items = relationship("LostItem", back_populates="user")
+    # Relationship with Lostitem (Reported by)
+    lostitems_reported = relationship('Lostitem', back_populates='user_reported')
 
-    # Define a one-to-one relationship between Users and FoundItem
-    found_item = relationship("FoundItem", back_populates="user", uselist=False)
-
-    # Define a one-to-one relationship between Users and Itemsreturnedtoowner
-    items_returned = relationship("ItemsReturnedToOwner", back_populates="user", uselist=False)
-
-    # Define a one-to-many relationship between Users and Reward
-    rewards = relationship("Reward", back_populates="user")
-
-    # Define a one-to-many relationship between Users and Comment
-    comments = relationship("Comment", back_populates="user")
-
-    def __repr__(self):
-        return f'(id={self.id}, name={self.username} email={self.email})'
-
-class LostItem(db.Model):
+class Lostitem(db.Model):
     __tablename__ = 'lostitems'
 
     id = db.Column(db.Integer, primary_key=True)
     item_name = db.Column(db.String)
     item_description = db.Column(db.String)
     image_url = db.Column(db.String)
+    isfound = db.Column(db.Boolean)
+    isreturnedtoowner = db.Column(db.Boolean)
     reported_at = db.Column(db.DateTime, server_default=db.func.now())
-    
-    # Define a one-to-one relationship between LostItem and Reward
-    reward = relationship("Reward", back_populates="lost_item", uselist=False)
 
-    # Define a many-to-one relationship between LostItem and Users
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    user = relationship("Users", back_populates="lost_items")
+    # Relationship with User (User who reported)
+    user_reported_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_reported = relationship('User', back_populates='lostitems_reported')
+
+    # Relationship with Reward (Has Reward)
+    reward = relationship('Reward', uselist=False, back_populates='lostitem')
+
+    # Relationship with Comment (Comment on)
+    comments = relationship('Comment', back_populates='lostitem')
 
 class Reward(db.Model):
     __tablename__ = 'rewards'
 
     id = db.Column(db.Integer, primary_key=True)
-    reward_amount = db.Column(db.String)
-    item_name = db.Column(db.String)
+    rewardamount = db.Column(db.String)
 
-    # Define a many-to-one relationship between Reward and Users
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    user = relationship("Users", back_populates="rewards")
-
-    # Define a one-to-one relationship between Reward and LostItem
-    item_id = db.Column(db.Integer, db.ForeignKey('lostitems.id'))
-    lost_item = relationship("LostItem", back_populates="reward", uselist=False)
+    # Relationship with Lostitem (Has Reward)
+    lostitem_id = db.Column(db.Integer, db.ForeignKey('lostitems.id'))
+    lostitem = relationship('Lostitem', back_populates='reward')
 
 class Comment(db.Model):
     __tablename__ = 'comments'
 
     id = db.Column(db.Integer, primary_key=True)
     comment = db.Column(db.String)
+    
+    # Relationship with Lostitem (Comment on)
     lostitem_id = db.Column(db.Integer, db.ForeignKey('lostitems.id'))
-
-    # Define a many-to-one relationship between Comment and Users
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    user = relationship("Users", back_populates="comments")
-
-class FoundItem(db.Model):
-    __tablename__ = 'founditems'
-
-    id = db.Column(db.Integer, primary_key=True)
-    item_id = db.Column(db.Integer, db.ForeignKey('lostitems.id'))
-    item_name = db.Column(db.String)
-    reward_id = db.Column(db.Integer)
-    image_url = db.Column(db.String)
-
-    # Define a one-to-one relationship between FoundItem and Users
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    user = relationship("Users", back_populates="found_item", uselist=False)
-
-class ItemsReturnedToOwner(db.Model):
-    __tablename__ = 'itemsreturnedtoowner'
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    item_id = db.Column(db.Integer, db.ForeignKey('lostitems.id'))
-    datereturned = db.Column(db.DateTime, server_default=db.func.now())
-
-    # Define a one-to-one relationship between ItemsReturnedToOwner and Users
-    user = relationship("Users", back_populates="items_returned", uselist=False)
+    lostitem = relationship('Lostitem', back_populates='comments')
