@@ -17,18 +17,17 @@ class User(db.Model):
     role = db.Column(db.String)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 
-    # Relationship with Lostitem (Reported by)
-    lostitems_reported = relationship('Lostitem', back_populates='user_reported')
+    # Relationship with Item (Reported by)
+    lostitems_reported = relationship('Item', back_populates='user_reported')
 
-class Lostitem(db.Model):
-    __tablename__ = 'lostitems'
+class Item(db.Model):
+    __tablename__ = 'items'
 
     id = db.Column(db.Integer, primary_key=True)
     item_name = db.Column(db.String)
     item_description = db.Column(db.String)
     image_url = db.Column(db.String)
-    isfound = db.Column(db.Boolean)
-    isreturnedtoowner = db.Column(db.Boolean)
+    status = db.Column(db.String)
     reported_at = db.Column(db.DateTime, server_default=db.func.now())
 
     # Relationship with User (User who reported)
@@ -47,9 +46,9 @@ class Reward(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     rewardamount = db.Column(db.String)
 
-    # Relationship with Lostitem (Has Reward)
-    lostitem_id = db.Column(db.Integer, db.ForeignKey('lostitems.id'))
-    lostitem = relationship('Lostitem', back_populates='reward')
+    # Relationship with Item (Has Reward)
+    lostitem_id = db.Column(db.Integer, db.ForeignKey('items.id'))
+    lostitem = relationship('Item', back_populates='reward')
 
 class Comment(db.Model):
     __tablename__ = 'comments'
@@ -57,6 +56,23 @@ class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     comment = db.Column(db.String)
     
-    # Relationship with Lostitem (Comment on)
-    lostitem_id = db.Column(db.Integer, db.ForeignKey('lostitems.id'))
-    lostitem = relationship('Lostitem', back_populates='comments')
+    # Relationship with Item (Comment on)
+    lostitem_id = db.Column(db.Integer, db.ForeignKey('items.id'))
+    lostitem = relationship('Item', back_populates='comments')
+
+class Claim(db.Model):
+    __tablename__ = 'claims'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    status = db.Column(db.String, nullable=False)
+    
+class Payment(db.Model):
+    __tablename__ = 'payments'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    reward_id = db.Column(db.Integer, db.ForeignKey('rewards.id'))
+    payer_user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    amount = db.Column(db.Float, nullable=False)
+    payment_date = db.Column(db.DateTime, nullable=False)
