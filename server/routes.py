@@ -81,6 +81,21 @@ class Users(Resource):
         users = User.query.all()
         return users, 200
     
+@ns.route('/delete_users/<int:user_id>')
+class DeleteUser(Resource):
+    @ns.doc(params={'user_id': 'ID of the user to be deleted'})
+    @ns.marshal_list_with(users_schema)
+    def delete(self, user_id):
+        user = User.query.get(user_id)
+
+        if user:
+            db.session.delete(user)
+            db.session.commit()
+            return {'message': f'User with ID {user_id} deleted successfully'}, 200
+        else:
+            return {'message': f'User with ID {user_id} not found'}, 404
+
+  
 @ns.route('/signup')
 class Signup(Resource):
     @ns.expect(user_input_schema)
@@ -144,7 +159,41 @@ class PostItemlost(Resource):
                 "message": "Failed to create a lostitem",
                 "error": str(e)
             }, 500
+            
+            
+            
+@ns.route('/delete_delivered_items/<int:item_id>')
+class ItemResource(Resource):
+    @ns.doc(params={'item_id': 'ID of the item to be deleted'})
+    @ns.marshal_with(lost_item_schema)
+    def delete(self, item_id):
+        item = Item.query.get(item_id)
 
+        if item:
+            # Check if the item status is 'delivered'
+            if item.status == 'delivered':
+                db.session.delete(item)
+                db.session.commit()
+                return {'message': f'Item with ID {item_id} deleted successfully'}, 200
+            else:
+                return {'message': f'Item with ID {item_id} cannot be deleted. Status is not "delivered".'}, 400
+        else:
+            return {'message': f'Item with ID {item_id} not found'}, 404           
+            
+
+@ns.route('/delete_all_items/<int:item_id>')
+class ItemResourceAll(Resource):
+    @ns.doc(params={'item_id': 'ID of the item to be deleted'})
+    @ns.marshal_with(lost_item_schema)
+    def delete(self, item_id):
+        item = Item.query.get(item_id)
+
+        if item:
+            db.session.delete(item)
+            db.session.commit()
+            return {'message': f'Item with ID {item_id} deleted successfully'}, 200
+        else:
+            return {'message': f'Item with ID {item_id} not found'}, 404
 
 @ns.route('/lostitems')
 class Users(Resource):
