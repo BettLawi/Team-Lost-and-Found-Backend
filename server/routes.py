@@ -1,11 +1,15 @@
 from flask import Flask ,request
 from flask_sqlalchemy import SQLAlchemy
 from flask_restx import Api, Namespace, Resource, fields
-from models import User, db , Item , Reward
+from models import User, db , Item , Reward , Claim
 from flask_migrate import Migrate
+from flask_cors import CORS
 import secrets
 from flask_jwt_extended import JWTManager
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
+from functools import wraps
+from jwt.exceptions import ExpiredSignatureError, DecodeError
+import jwt
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -20,6 +24,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initialize SQLAlchemy
 db.init_app(app)
 
+CORS(app)
 # Initialize Flask-Migrate
 migrate = Migrate(app, db)
 
@@ -49,12 +54,13 @@ user_input_schema = api.model('user_input',{
 })
 
 lost_item_schema = api.model('item', {
+    'id' : fields.Integer,
     'item_name': fields.String(required=True, description='Name of the item'),
     'item_description': fields.String(description='Description of the item'),
     'image_url': fields.String(description='URL of the item image'),
     'user_reported_id': fields.Integer(description='User ID reporting the item') ,
     'status' : fields.String,
-    'reward' : fields.String 
+    'reward' : fields.Integer
 })
 
 get_lostitems_schema = api.model('lostitem' ,{
@@ -73,7 +79,7 @@ user_login_schema =api.model('login' , {
 reward_model = ns.model('Reward', {
     'id': fields.Integer,
     'rewardamount': fields.String,
-    'lostitem_id': fields.Integer,
+    'lostitem_name': fields.String,
 })
 
 comment_model = ns.model('Comment', {
@@ -89,15 +95,22 @@ reportfound_item_schema = api.model('lostitem' ,{
     'status' : fields.String ,
 })
 pending_item_schema = api.model('lostitem' ,{
+    'item_id' :fields.Integer ,
    'item_name': fields.String(required=True, description='Name of the item'),
     'item_description': fields.String(description='Description of the item'),
     'status' : fields.String ,
 })
+claim_item_schema = ns.model('claimeditem',{
+    'id' :fields.String ,
+    'item_name': fields.String ,
+    'user_id': fields.Integer,
+    'status': fields.String         
+})
+# ------------------------------------------authentication---------------------------------------------------------
 
 
 
 
-# ------------------------------------------------------------END OF ROUTES---------------------------------------
 
 # Define API routes
 @ns.route('/users')
@@ -159,7 +172,8 @@ class Login(Resource):
         access_token = create_access_token(identity=user.id)
         return {
             'access_token': access_token ,
-            'username' : user.username
+            'username' : user.username ,
+            'role' : user.role
         } , 201
         
 @ns.route('/itemlost')
@@ -181,6 +195,16 @@ class PostItemlost(Resource):
             db.session.add(new_lostitem)
             db.session.commit()
 
+            # Create a new reward entry
+            new_reward = Reward(
+                rewardamount=data.get('reward'),
+                lostitem=new_lostitem,  # Link the reward to the newly created item
+                user_id=data.get('user_reported_id')  # Assuming this is the user who reported the item
+            )
+
+            db.session.add(new_reward)
+            db.session.commit()
+
             return {
                 "message": "Transaction created successfully",
                 "lostitem": {
@@ -199,6 +223,47 @@ class PostItemlost(Resource):
                 "error": str(e)
             }, 500
 
+@ns.route('/itemlost/<int:item_id>')  # Use the item_id as a parameter in the URL
+class UpdateItemlost(Resource):
+
+    @ns.expect(lost_item_schema)
+    def put(self, item_id):
+        try:
+            # Attempt to retrieve the item with the given item_id
+            lost_item = Item.query.get(item_id)
+
+            if lost_item:
+                data = request.json  # Get the JSON data from the request
+
+                # Update the item fields with the new data
+                lost_item.item_name = data.get('item_name')
+                lost_item.item_description = data.get('item_description')
+                lost_item.image_url = data.get('image_url')
+                lost_item.reward = data.get('reward')
+                # You can update other fields as needed
+
+                db.session.commit()
+
+                return {
+                    "message": f"Lost item with ID {item_id} updated successfully",
+                    "lostitem": {
+                        "item_name": lost_item.item_name,
+                        "item_description": lost_item.item_description,
+                        'image_url': lost_item.image_url,
+                        'reward': lost_item.reward,
+                        'status': lost_item.status
+                    }
+                }, 200
+            else:
+                return {
+                    "error": f"Lost item with ID {item_id} not found"
+                }, 404
+        except Exception as e:
+            db.session.rollback()
+            return {
+                "message": "Failed to update the lost item",
+                 "error": str(e)
+            }, 500
 
 @ns.route('/lostitems')
 class Users(Resource):
@@ -217,6 +282,8 @@ class RewardsResource(Resource):
         rewards = Reward.query.all()
         return rewards , 201
     
+
+    #-------------------------------------------reportfounditemlogic----------------------------------------------------------- 
 @ns.route('/reportfounditem')
 class Reportfounditem(Resource):
     @ns.expect(reportfound_item_schema)
@@ -241,8 +308,8 @@ class Reportfounditem(Resource):
                     "item_name": new_founditem.item_name,
                     "item_description": new_founditem.item_description,
                     'image_url': new_founditem.image_url,
-                    'reward': new_founditem.reward,
-                    'status': new_founditem.status
+                    'status': new_founditem.status ,
+                    'reportedby' : new_founditem.user_reported_id
                 }
             }, 201
 
@@ -275,6 +342,88 @@ class ApproveFoundItem(Resource):
             return {"message": "Found item approved by admin"}, 200
         else:
             return {"error": "Item not found or not in 'pending' status"}, 404
+        
+@ns.route('/found_items')
+class get_pending_items(Resource):
+    
+    @ns.marshal_list_with(reportfound_item_schema)
+    def get(self):
+     found_items = Item.query.filter_by(status='found').all()
+     if found_items:
+        return found_items
+     else:
+        return {'message': 'No found items'}, 200
+     
+   
+@ns.route('/lostitems/<int:id>')
+class Deletetransaction(Resource):   
+    def delete(self ,id):
+        transaction = Item.query.filter_by(id=id).first()
+        db.session.delete(transaction)
+        db.session.commit()
+
+        response_dict = {
+            "message" : "record succefully deleted"
+        }
+        return response_dict, 200
+    
+
+    
+# -----------------------------------------------------claim logic---------------------------------------------------------------
+@ns.route('/claimitem')
+class Claimfounditem(Resource):
+    @ns.expect(claim_item_schema)
+    def post(self):
+        try:
+            data = request.json  # Get the JSON data from the request
+
+            new_claimeditem = Claim(
+                item_name=data.get('item_name'),
+                user_id=data.get('user_id'),
+                status= 'notclaimed',
+            )
+
+            db.session.add(new_claimeditem)
+            db.session.commit()
+
+            return {
+                "message": "Item claimed. Awaiting admin approval.",
+                "founditem": {
+                    "item_iname": new_claimeditem.item_name,
+                    "user_id": new_claimeditem.user_id,
+                    'status': new_claimeditem.status
+                }
+            }, 201
+
+        except Exception as e:
+            db.session.rollback()
+            return {
+                "message": "Failed to claim item",
+                "error": str(e)
+            }, 500
+        
+@ns.route('/approve_claimed_item/<int:item_id>')
+class ApproveClaimedItem(Resource):
+    def put(self, item_id):
+        claim_item = Claim.query.get(item_id)
+
+        if claim_item and claim_item.status == 'notclaimed':
+            claim_item.status = 'claimed'
+            db.session.commit()
+            return {"message": "Claimed item approved by admin"}, 200
+        else:
+            return {"error": "Item not claimed "}, 404
+
+        
+@ns.route('/pendingclaim_items')
+class get_pending_items(Resource):
+    @ns.marshal_list_with(claim_item_schema)
+    def get(self):
+     pending_items = Claim.query.filter_by(status='notclaimed').all()
+     if pending_items:
+        return pending_items
+     else:
+        return {'message': 'No pending items'}, 200
 
 # Main entry point
 if __name__ == '__main__':

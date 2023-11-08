@@ -21,6 +21,9 @@ class User(db.Model):
     # Relationship with Item (Reported by)
     lostitems_reported = relationship('Item', back_populates='user_reported')
 
+    # Relationship with Reward (Rewards received)
+    rewards_received = relationship('Reward', back_populates='user')
+
 class Item(db.Model):
     __tablename__ = 'items'
 
@@ -38,37 +41,32 @@ class Item(db.Model):
     user_reported_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     user_reported = relationship('User', back_populates='lostitems_reported')
 
-    # Relationship with Comment (Comment on)
-    comments = relationship('Comment', back_populates='lostitem')
+    # Relationship with Reward (Reward for this item)
+    rewards = relationship('Reward', back_populates='lostitem')
 
-   
 class Reward(db.Model):
     __tablename__ = 'rewards'
 
     id = db.Column(db.Integer, primary_key=True)
     rewardamount = db.Column(db.String)
 
-    # Relationship with Item (Has Reward)
-    lostitem_id = db.Column(db.Integer, db.ForeignKey('items.id'))
+    # Relationship with Item (Item with this reward)
+    lostitem_name = db.Column(db.Integer, db.ForeignKey('items.item_name'))
+    lostitem = relationship('Item', back_populates='rewards')
 
-class Comment(db.Model):
-    __tablename__ = 'comments'
+    # Relationship with User (User who received)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user = relationship('User', back_populates='rewards_received')
 
-    id = db.Column(db.Integer, primary_key=True)
-    comment = db.Column(db.String)
-    
-    # Relationship with Item (Comment on)
-    lostitem_id = db.Column(db.Integer, db.ForeignKey('items.id'))
-    lostitem = relationship('Item', back_populates='comments')
-    
 class Claim(db.Model):
     __tablename__ = 'claims'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    item_id = db.Column(db.Integer, db.ForeignKey('items.id'))
+    item_name = db.Column(db.Integer, db.ForeignKey('items.item_name'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    comment = db.Column(db.String)  # Assuming comment is a string, adjust if needed
     status = db.Column(db.String, nullable=False)
-    
+
 class Payment(db.Model):
     __tablename__ = 'payments'
 

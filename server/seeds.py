@@ -3,16 +3,18 @@ import random
 from routes import app
 from datetime import datetime
 
-from models import db , User , Comment, Reward  , Item , Claim ,Payment
+from models import db , User , Reward  , Item , Claim ,Payment
 
 fake = Faker()
 
 with app.app_context():
-
+    
+    
     itemstatus = ['lost' , 'found' , 'delivered']
+
     passwordarray =['kej' , 'jek' , 'lam' , 'vedit' ,'duds']
     adminapproved = [True ,False]
-    claimsstatus = [ True , False]
+    claimsstatus = [ "notclaimed" , "claimed"]
     categories = ['electronic ', 'wearable']
     Role = ['Admin' , 'User']
     lostitems = [ 'laptop' , 'Earphone' , 'Airpod ', 'Charger' , 'Phone' , 'Mouse','Flashdisks']
@@ -28,10 +30,9 @@ with app.app_context():
 
     User.query.delete()
     Item.query.delete()
-    Comment.query.delete()
-    Reward.query.delete()
     Claim.query.delete()
     Payment.query.delete()
+    Reward.query.delete()
 
     print("🦸‍♀️ Seeding users...")
     users_ids = []
@@ -60,6 +61,7 @@ with app.app_context():
             user_reported_id = random.choice(users_ids) ,
             image_url = random.choice(image_url) ,
             status =random.choice(itemstatus) ,
+            reward = random.choice([200 ,300,400]) ,
             admin_approved = random.choice(adminapproved) ,
             categories = random.choice(categories)
         )
@@ -70,24 +72,14 @@ with app.app_context():
         db.session.commit()
         itemsid.append(lostitemobject.id)
     
-    print ("🦸‍♀️ seeding comment..")
-
-    comments = []
-    for i in range(20):
-        commentobject = Comment(
-            comment = fake.paragraph() ,
-            lostitem_id = random.choice(itemsid)
-            )
-        comments.append(commentobject)
-        db.session.add_all(comments)
-        db.session.commit()
+    
 
     print ("🦸‍♀️ seeding rewards..")
     rewards = []
     for i in range(20):
         rewardsobject = Reward(
             rewardamount = round(random.uniform(100.00, 100.00), 2) ,
-            lostitem_id = random.choice(itemsid)
+            lostitem_name = random.choice(lostitems)
         )
         rewards.append(rewardsobject)
         db.session.add_all(rewards)
@@ -97,9 +89,10 @@ with app.app_context():
     claims = []
     for i in range(20):
         claimssobject = Claim(
-            item_id = random.choice(itemsid) ,
+            item_name = random.choice(lostitems) ,
             user_id = random.choice(users_ids) ,
-            status = random.choice(claimsstatus)
+            status = random.choice(claimsstatus) ,
+            comment = fake.sentence()
         )
         claims.append(claimssobject)
         db.session.add_all(claims)
