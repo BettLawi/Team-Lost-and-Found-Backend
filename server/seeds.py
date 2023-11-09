@@ -10,7 +10,7 @@ fake = Faker()
 with app.app_context():
     
     
-    itemstatus = ['lost' , 'found' , 'delivered']
+    itemstatus = ['lost' , 'found' ]
 
     passwordarray =['kej' , 'jek' , 'lam' , 'vedit' ,'duds']
     adminapproved = [True ,False]
