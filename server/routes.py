@@ -10,6 +10,7 @@ from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_requir
 from functools import wraps
 from jwt.exceptions import ExpiredSignatureError, DecodeError
 import jwt
+import os
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -18,7 +19,7 @@ app = Flask(__name__)
 
 secret_key = secrets.token_hex(16)
 app.config['SECRET_KEY'] = secret_key
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize SQLAlchemy

@@ -19,6 +19,8 @@ pyjwt = "*"
 flask = "==2.3.3"
 flask-cors = "*"
 gunicorn = "*"
+psycopg2-binary = "*"
+
 [dev-packages]
 
 [requires]
