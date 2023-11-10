@@ -4,9 +4,10 @@ from flask_restx import Api, Namespace, Resource, fields
 from models import User, db , Item , Reward
 from flask_migrate import Migrate
 import secrets
+from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
-
+import os
 # Initialize Flask app
 app = Flask(__name__)
 
@@ -14,7 +15,8 @@ app = Flask(__name__)
 
 secret_key = secrets.token_hex(16)
 app.config['SECRET_KEY'] = secret_key
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
+#postgres://lostandfound_myyo_user:oP5S2hfND1IUAqcUIduf0GH6TsJpLxL0@dpg-cl6sfj2uuipc73f36eug-a.oregon-postgres.render.com/lostandfound_myyo
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize SQLAlchemy
