@@ -65,7 +65,7 @@ class Claim(db.Model):
     __tablename__ = 'claims'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    item_id = db.Column(db.Integer, db.ForeignKey('items.id'))
+    item_name = db.Column(db.Integer, db.ForeignKey('items.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     status = db.Column(db.String, nullable=False)
     

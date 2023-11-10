@@ -1,9 +1,9 @@
 from faker import Faker
 import random
-from routes import app
+from app import app
 from datetime import datetime
 
-from models import db , User , Comment, Reward  , Item , Claim ,Payment
+from server.models import db , User , Comment, Reward  , Item , Claim ,Payment
 
 fake = Faker()
 
@@ -60,6 +60,7 @@ with app.app_context():
             user_reported_id = random.choice(users_ids) ,
             image_url = random.choice(image_url) ,
             status =random.choice(itemstatus) ,
+            reward = random.choice([200 ,300,400]) ,
             admin_approved = random.choice(adminapproved) ,
             categories = random.choice(categories)
         )
