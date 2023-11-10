@@ -1,8 +1,8 @@
-"""Initial migration
+"""mymodals
 
-Revision ID: d7acdceac47f
+Revision ID: b94165f65d83
 Revises: 
-Create Date: 2023-11-01 11:57:49.084089
+Create Date: 2023-11-10 12:01:43.582973
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'd7acdceac47f'
+revision = 'b94165f65d83'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -33,7 +33,9 @@ def upgrade():
     sa.Column('item_description', sa.String(), nullable=True),
     sa.Column('image_url', sa.String(), nullable=True),
     sa.Column('categories', sa.String(), nullable=True),
+    sa.Column('reward', sa.String(), nullable=True),
     sa.Column('status', sa.String(), nullable=True),
+    sa.Column('admin_approved', sa.Boolean(), nullable=True),
     sa.Column('reported_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('user_reported_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['user_reported_id'], ['users.id'], name=op.f('fk_items_user_reported_id_users')),
@@ -41,10 +43,10 @@ def upgrade():
     )
     op.create_table('claims',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('item_id', sa.Integer(), nullable=True),
+    sa.Column('item_name', sa.Integer(), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('status', sa.String(), nullable=False),
-    sa.ForeignKeyConstraint(['item_id'], ['items.id'], name=op.f('fk_claims_item_id_items')),
+    sa.ForeignKeyConstraint(['item_name'], ['items.id'], name=op.f('fk_claims_item_name_items')),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f('fk_claims_user_id_users')),
     sa.PrimaryKeyConstraint('id')
     )

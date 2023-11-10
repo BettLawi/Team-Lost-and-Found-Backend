@@ -3,7 +3,7 @@ import random
 from app import app
 from datetime import datetime
 
-from server.models import db , User , Comment, Reward  , Item , Claim ,Payment
+from models import db , User , Comment, Reward  , Item , Claim ,Payment
 
 fake = Faker()
 
@@ -98,7 +98,7 @@ with app.app_context():
     claims = []
     for i in range(20):
         claimssobject = Claim(
-            item_id = random.choice(itemsid) ,
+            item_name = random.choice(itemsid) ,
             user_id = random.choice(users_ids) ,
             status = random.choice(claimsstatus)
         )

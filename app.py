@@ -2,7 +2,7 @@
 from flask import Flask ,request
 from flask_sqlalchemy import SQLAlchemy
 from flask_restx import Api, Namespace, Resource, fields
-from server.models import User, db , Item , Reward , Claim
+from models import User, db , Item , Reward , Claim
 from flask_migrate import Migrate
 from flask_cors import CORS
 import secrets
